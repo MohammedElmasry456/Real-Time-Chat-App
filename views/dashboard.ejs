@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Page</title>
+    <style>
+        .chat-head {
+            margin-bottom: 20px;
+            color: blue;
+            font-weight: bold;
+        }
+
+        .chat-container {
+            display: none;
+        }
+
+        .Online-status {
+            font-weight: bold;
+            color: green;
+        }
+
+        .Offline-status {
+            font-weight: bold;
+            color: red;
+        }
+
+        .chat {
+            background-color: aqua;
+            overflow: scroll;
+            width: 500px;
+            height: 400px;
+        }
+
+        #message {
+            width: 400px;
+            margin: 20px 0;
+        }
+
+        .container {
+            display: flex;
+            justify-content: center;
+            gap: 100px;
+        }
+
+        .current-user {
+            text-align: right;
+            margin: 10px;
+            color: black;
+        }
+
+        .distance-user {
+            text-align: left;
+            margin: 10px;
+            color: black;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>
+        Hii, <%= message.name %>
+    </h1>
+    <hr>
+    <div class="container">
+        <div>
+            <% if (users && users.length> 0) { %>
+                <% users.forEach((user)=> { %>
+                    <p style="cursor: pointer;" class="list" dataId="<%= user._id %>">
+                        <img src="<%= user.image %>" alt="Img" width="50px" height="50px" style="border-radius: 50%;">
+                        <%= user.name %> |
+                            <% if (user.is_Online) { %>
+                                <span class="Online-status" id="<%= user._id %>-status">
+                                    Online</span>
+                                <% } else { %>
+                                    <span class="Offline-status" id="<%= user._id %>-status">
+                                        Offline</span>
+                                    <% } %>
+                    </p>
+                    <% }) %>
+                        <% } %>
+        </div>
+        <div>
+            <div class="chat-head">
+                Start New Chat
+            </div>
+            <div class="chat-container">
+                <div class="chat">
+                </div>
+
+                <form id="chat-form">
+                    <input type="text" name="message" id="message" placeholder="Enter Your Message" required>
+                    <input type="submit" value="Send">
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+
+    <script>
+        const socket = window.io({
+            auth: {
+                token: '<%= message._id %>'
+            }
+        });
+
+        var sender_Id = "<%= message._id %>";
+        var receiver_Id;
+        $(document).ready(function () {
+            $('.list').click(function () {
+                receiver_Id = $(this).attr("dataId");
+                if ($('.chat-container').is(':visible')) {
+                    $('.chat-container').hide();
+                    $('.chat-head').show();
+                } else {
+                    $('.chat-container').show();
+                    $('.chat-head').hide();
+                }
+                $(".chat").html('');
+                socket.emit("loadOldChat", { receiver_id: receiver_Id, sender_id: sender_Id })
+
+            });
+        });
+
+        const form = document.getElementById("chat-form");
+        const message = document.getElementById("message");
+        form.addEventListener("submit", (e) => {
+            e.preventDefault();
+            $.ajax({
+                url: "/saveChat",
+                method: "POST",
+                data: { receiver_id: receiver_Id, sender_id: sender_Id, message: message.value },
+                success: function (response) {
+                    if (response.status === "success") {
+                        let chat = response.data.message;
+                        let html = `<div class="current-user">${chat}</div>`
+                        $(".chat").append(html)
+                        scrollChat()
+                        socket.emit("newChat", { data: response.data })
+                    }
+                }
+            })
+        })
+
+
+
+        socket.on("getOnlineUsers", ({ user_Id }) => {
+            $(`#${user_Id}-status`).removeClass("Offline-status")
+            $(`#${user_Id}-status`).text("Online")
+            $(`#${user_Id}-status`).addClass("Online-status")
+        })
+        socket.on("getOfflineUsers", ({ user_Id }) => {
+            $(`#${user_Id}-status`).removeClass("Online-status")
+            $(`#${user_Id}-status`).text("Offline")
+            $(`#${user_Id}-status`).addClass("Offline-status")
+        })
+
+        socket.on("loadNewChat", (res) => {
+            if (res.data.sender_id == receiver_Id && res.data.receiver_id == sender_Id) {
+                let html = ` <div class="distance-user">${res.data.message}</div>`
+                $(".chat").append(html)
+                scrollChat()
+            }
+        })
+
+        socket.on("oldChats", chats => {
+            chats.forEach(chat => {
+                if (chat.sender_id == sender_Id) {
+                    let html = ` <div class="current-user">${chat.message}</div>`
+                    $(".chat").append(html)
+                } else {
+                    let html = ` <div class="distance-user">${chat.message}</div>`
+                    $(".chat").append(html)
+                }
+                scrollChat()
+            });
+        })
+
+        function scrollChat() {
+            $(".chat").animate({
+                scrollTop: $(".chat").offset().top + $(".chat")[0].scrollHeight
+            }, 0)
+        }
+
+    </script>
+
+    <a href="/logout">logout</a>
+
+</body>
+
+</html>
