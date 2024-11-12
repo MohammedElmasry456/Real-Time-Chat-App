@@ -11,6 +11,8 @@ const {
   loadDashboard,
   logout,
   saveChat,
+  deleteMessage,
+  updateMessage,
 } = require("../controllers/userController");
 const { isAllowed } = require("../middlewares/auth");
 
@@ -51,5 +53,7 @@ router.route("/logout").get(isAllowed, logout);
 
 router.route("/dashboard").get(isAllowed, loadDashboard);
 router.post("/saveChat", isAllowed, saveChat);
+router.delete("/deleteMessage", isAllowed, deleteMessage);
+router.put("/updateMessage", isAllowed, updateMessage);
 
 module.exports = router;

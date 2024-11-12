@@ -45,7 +45,12 @@ io.on("connection", async (socket) => {
         ],
       })
       .sort("createdAt");
-    socket.emit("oldChats", chats);
+
+    if (res.action === "delete" || res.action === "update") {
+      io.sockets.emit("oldChats", chats);
+    } else {
+      socket.emit("oldChats", chats);
+    }
   });
 
   socket.on("disconnect", async (reason) => {

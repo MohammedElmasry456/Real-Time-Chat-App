@@ -44,6 +44,16 @@
             gap: 100px;
         }
 
+        .remove {
+            color: red;
+            padding: 5px;
+            font-size: 7px;
+            background-color: black;
+            border-radius: 50%;
+            cursor: pointer;
+
+        }
+
         .current-user {
             text-align: right;
             margin: 10px;
@@ -120,11 +130,13 @@
                     $('.chat-container').show();
                     $('.chat-head').hide();
                 }
-                $(".chat").html('');
                 socket.emit("loadOldChat", { receiver_id: receiver_Id, sender_id: sender_Id })
 
             });
         });
+
+
+
 
         const form = document.getElementById("chat-form");
         const message = document.getElementById("message");
@@ -137,7 +149,7 @@
                 success: function (response) {
                     if (response.status === "success") {
                         let chat = response.data.message;
-                        let html = `<div class="current-user">${chat}</div>`
+                        let html = `<div class="current-user" >${chat} <span class="remove" id=${response.data._id}>X</span></div>`
                         $(".chat").append(html)
                         scrollChat()
                         socket.emit("newChat", { data: response.data })
@@ -168,9 +180,10 @@
         })
 
         socket.on("oldChats", chats => {
+            $(".chat").html('');
             chats.forEach(chat => {
                 if (chat.sender_id == sender_Id) {
-                    let html = ` <div class="current-user">${chat.message}</div>`
+                    let html = ` <div class="current-user" id=${chat._id}>${chat.message} <span class="remove" id=${chat._id}>X</span></div>`
                     $(".chat").append(html)
                 } else {
                     let html = ` <div class="distance-user">${chat.message}</div>`
@@ -185,6 +198,64 @@
                 scrollTop: $(".chat").offset().top + $(".chat")[0].scrollHeight
             }, 0)
         }
+
+
+
+        $(document).ready(function () {
+            $(document).on('click', '.remove', function () {
+                const message_Id = $(this).attr("id");
+                $.ajax({
+                    url: "/deleteMessage",
+                    method: "DELETE",
+                    data: { message_Id },
+                    success: function (response) {
+                        if (response.status === "success") {
+                            socket.emit("loadOldChat", { receiver_id: receiver_Id, sender_id: sender_Id, action: "delete" })
+                        }
+                    }
+                })
+            });
+        });
+
+        $(document).ready(function () {
+            $(document).on("dblclick", ".current-user", function () {
+                const currentDiv = $(this);
+                const currentText = currentDiv.clone().children().remove().end().text().trim();
+
+                const input = $("<input>", {
+                    type: "text",
+                    class: "edit-input",
+                    value: currentText,
+                    css: { width: "90%", marginRight: "5px" }
+                });
+
+                currentDiv.html(input);
+                input.focus();
+
+                input.on("blur", function () {
+                    const updatedText = $(this).val().trim();
+                    currentDiv.html(`${updatedText} <span class="remove" id="${currentDiv.attr("id")}">X</span>`);
+                    $.ajax({
+                        url: "/updateMessage",
+                        method: "PUT",
+                        data: { message_Id: currentDiv.attr("id"), newMsg: updatedText },
+                        success: function (response) {
+                            if (response.status === "success") {
+                                socket.emit("loadOldChat", { receiver_id: receiver_Id, sender_id: sender_Id, action: "update" })
+                            }
+                        }
+                    })
+                });
+
+                input.on("keypress", function (e) {
+                    if (e.which === 13) {
+                        $(this).blur();
+                    }
+                });
+            });
+        });
+
+
 
     </script>
 

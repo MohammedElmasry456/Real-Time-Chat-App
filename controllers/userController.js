@@ -53,3 +53,23 @@ exports.saveChat = asyncHandler(async (req, res) => {
     data: chat,
   });
 });
+
+exports.deleteMessage = asyncHandler(async (req, res) => {
+  await chatModel.findByIdAndDelete(req.body.message_Id);
+  res.status(200).send({
+    status: "success",
+    message: "message deleted successfully",
+  });
+});
+
+exports.updateMessage = asyncHandler(async (req, res) => {
+  const chat = await chatModel.findByIdAndUpdate(
+    req.body.message_Id,
+    { message: req.body.newMsg },
+    { new: true }
+  );
+  res.status(200).send({
+    status: "success",
+    message: "message deleted successfully",
+  });
+});
