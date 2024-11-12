@@ -4,6 +4,7 @@ require("dotenv").config({ path: "config.env" });
 const userRoute = require("./routes/userRoute");
 const userModel = require("./models/userModel");
 const chatModel = require("./models/chatModel");
+const path = require("path");
 const app = express();
 app.use(express.urlencoded({ extended: true }));
 
@@ -16,7 +17,7 @@ app.use(express.static("public"));
 
 //set view engine and view directory
 app.set("view engine", "ejs");
-app.set("views", "views");
+app.set("views", path.join(__dirname, "views"));
 
 //connection to database
 connectDB();
