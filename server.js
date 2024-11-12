@@ -23,7 +23,7 @@ connectDB();
 
 //Socket.io Connection
 io.on("connection", async (socket) => {
-  console.log("user connected!");
+  console.log("User connected!");
   const user_Id = socket.handshake.auth.token;
 
   await userModel.findByIdAndUpdate(user_Id, { is_Online: true });
@@ -54,7 +54,7 @@ io.on("connection", async (socket) => {
   });
 
   socket.on("disconnect", async (reason) => {
-    console.log("user disconnected | " + reason);
+    console.log("User disconnected | " + reason);
     await userModel.findByIdAndUpdate(user_Id, { is_Online: false });
     io.sockets.emit("getOfflineUsers", { user_Id });
   });
